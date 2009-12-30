@@ -3,7 +3,7 @@
 "=============================================================================
 "
 " Author:  Takahiro SUZUKI <takahiro.suzuki.ja@gmDELETEMEail.com>
-" Version: 1.1 (Vim 7.1)
+" Version: 1.1.1 (Vim 7.1)
 " Licence: MIT Licence
 "
 "=============================================================================
@@ -79,6 +79,12 @@
 "
 "-----------------------------------------------------------------------------
 " ChangeLog:
+"   1.1.1:
+"     - debug (stop beeping on using text objects). Thanks to Nadav Samet.
+"
+"   1.1.unreleased:
+"     - support for commas in <..> (for cpp templates)
+"
 "   1.1:
 "     - support for commas in quoted string (".."), array ([..])
 "       do nothing outside a function declaration/call
@@ -105,7 +111,7 @@ function! s:GetOutOfDoubleQuote()
   endif
 
   while 1
-    exe 'normal ^va"'
+    exe 'silent! normal ^va"'
     normal :\<ESC>\<CR>
     if getpos("'<")==getpos("'>")
       break
@@ -131,7 +137,7 @@ endfunction
 function! s:GetOuterFunctionParenthesis()
   let pos_save = getpos('.')
   let rightup_before = pos_save
-  silent normal [(
+  silent! normal [(
   let rightup_p = getpos('.')
   while rightup_p != rightup_before
     if ! g:argumentobject_force_toplevel && getline('.')[getpos('.')[2]-1-1] =~ '[a-zA-Z0-9_]'
@@ -139,7 +145,7 @@ function! s:GetOuterFunctionParenthesis()
       break
     endif
     let rightup_before = rightup_p
-    silent normal [(
+    silent! normal [(
     let rightup_p = getpos('.')
   endwhile
   call setpos('.', pos_save)
@@ -230,6 +236,7 @@ function! s:MotionArgument(inner, visual)
   " replace all parentheses and commas inside them to '_'
   let arglist_sub = substitute(arglist_sub, "'".'\([^'."'".']\{-}\)'."'", '\="(".substitute(submatch(1), ".", "_", "g").")"', 'g') " replace '..' => (__)
   let arglist_sub = substitute(arglist_sub, '\[\([^'."'".']\{-}\)\]', '\="(".substitute(submatch(1), ".", "_", "g").")"', 'g')     " replace [..] => (__)
+  let arglist_sub = substitute(arglist_sub, '<\([^'."'".']\{-}\)>', '\="(".substitute(submatch(1), ".", "_", "g").")"', 'g')       " replace <..> => (__)
   let arglist_sub = substitute(arglist_sub, '"\([^'."'".']\{-}\)"', '(\1)', 'g') " replace ''..'' => (..)
   """echo 'transl quotes: ' . arglist_sub
   while stridx(arglist_sub, '(')>=0 && stridx(arglist_sub, ')')>=0
